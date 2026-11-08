@@ -91,7 +91,7 @@ impl Writer {
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
                 let char = self.buffer.chars[row][col].read();
-                self.buffer.chars[row - 1][col].write(character);
+                self.buffer.chars[row - 1][col].write(char);
             }
         }
         self.clear_row(BUFFER_HEIGHT - 1);
@@ -118,18 +118,13 @@ impl fmt::Write for Writer {
     }
 }
 
-// temporary function to test the write_byte and write_string mechanics
-pub fn print_something() {
-    use core::fmt::Write;
-    let mut writer = Writer {
+use lazy_static::lazy_static;
+use spin::Mutex;
+
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_pos: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
-        // interpreting the adress as a buffer struct and creating a mutable reference from it
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-    };
-
-    writer.write_byte(b'H');
-    writer.write_string("ello ");
-    writer.write_string("Wörld!");
-    write!(writer, "Printing the numbers {} and {}", 42, 1.0/3.0).unwrap();
+    });
 }
