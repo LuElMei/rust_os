@@ -87,18 +87,49 @@ impl Writer {
         }
     }
 
-    fn new_line(&mut self) { todo!() }
+    fn new_line(&mut self) { 
+        for row in 1..BUFFER_HEIGHT {
+            for col in 0..BUFFER_WIDTH {
+                let char = self.buffer.chars[row][col].read();
+                self.buffer.chars[row - 1][col].write(character);
+            }
+        }
+        self.clear_row(BUFFER_HEIGHT - 1);
+        self.column_pos = 0;
+    }
+
+    fn clear_row(&mut self, row: usize) { 
+        let blank_char = ScreenChar {
+            ascii_char: b' ',
+            color_code: self.color_code,
+        };
+        for col in 0..BUFFER_WIDTH {
+            self.buffer.chars[row][col].write(blank_char);
+        }
+    }
+}
+
+use core::fmt;
+
+impl fmt::Write for Writer {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write_string(s);
+        Ok(())
+    }
 }
 
 // temporary function to test the write_byte and write_string mechanics
 pub fn print_something() {
+    use core::fmt::Write;
     let mut writer = Writer {
         column_pos: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
+        // interpreting the adress as a buffer struct and creating a mutable reference from it
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     };
 
     writer.write_byte(b'H');
     writer.write_string("ello ");
     writer.write_string("Wörld!");
+    write!(writer, "Printing the numbers {} and {}", 42, 1.0/3.0).unwrap();
 }
