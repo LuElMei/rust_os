@@ -15,7 +15,8 @@ use core::panic::PanicInfo;
 // so the system knows what do to during a panic, eg.:
 // when index is out of bounds, unwrap() on None or Err, Div by Zero etc
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }
 
@@ -24,10 +25,10 @@ fn panic(_info: &PanicInfo) -> ! {
 // no mangle ensures the name stays the same
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
-    use core::fmt::Write;
-    let mut writer_lock = vga_buffer::WRITER.lock();
-    writer_lock.write_str("Hello again\n").unwrap();
-    write!(writer_lock, "Some numbers: {} {}", 42, 1.33337).unwrap();
-    
+    println!();
+    println!("Hello World!");
+    println!("Some numbers: {} {}", 42, 1.3337);
+    let option: Option<i32> = None;
+    option.unwrap();
     loop {}
 }
