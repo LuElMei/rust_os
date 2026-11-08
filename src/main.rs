@@ -6,6 +6,8 @@
 // like the C-Runtime, which builds the rust runtime
 #![no_main]
 
+mod vga_buffer;
+
 
 use core::panic::PanicInfo;
 
@@ -17,10 +19,14 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
+static HELLO: &[u8] = b"Hello! This is a first test using the VGA buffer!";
+
 // our own entry point, which uses the c calling convention
 // because rusts is unstable
 // no mangle ensures the name stays the same
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
+    vga_buffer::print_something();
+    
     loop {}
 }
