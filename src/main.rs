@@ -9,7 +9,7 @@
 // our own test runner because
 // rusts test framework requires the std lib
 #![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
+#![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 mod vga_buffer;
@@ -18,25 +18,6 @@ mod serial;
 
 use core::panic::PanicInfo;
 
-// we dont use the std lib, so we have to define our own panic handler
-// so the system knows what do to during a panic, eg.:
-// when index is out of bounds, unwrap() on None or Err, Div by Zero etc
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
-
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    serial_println!("[failed]\n");
-    serial_println!("Error: {}\n", info);
-    exit_qemu(QemuExitCode::Failed);
-
-    loop {}
-}
 
 // our own entry point, which uses the c calling convention
 // because rusts is unstable
@@ -51,46 +32,20 @@ pub extern "C" fn _start() -> ! {
     loop {};
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failed = 0x11,
+// we dont use the std lib, so we have to define our own panic handler
+// so the system knows what do to during a panic, eg.:
+// when index is out of bounds, unwrap() on None or Err, Div by Zero etc
+#[cfg(not(test))]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    loop {}
 }
-
-pub fn exit_qemu(exit_code: QemuExitCode) {
-    use x86_64::instructions::port::Port;
-
-    unsafe {
-        // create a new port at iobase 
-        let mut port = Port::new(0xf4);
-        port.write(exit_code as u32);
-    }
-}
-
-pub trait Testable {
-    fn run(&self) -> ();
-}
-
-impl<T> Testable for T
-where T: Fn()
-{
-    fn run(&self) -> () {
-        serial_print!("{}...\t", core::any::type_name::<T>());
-        self();
-        serial_print!("[ok]");
-    }
-}
-
 
 #[cfg(test)]
-pub fn test_runner(tests: &[&dyn Testable]) {
-    serial_println!("Running {} tests", tests.len());
-    for test in tests {
-        test.run();
-    }
-
-    exit_qemu(QemuExitCode::Success);
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    rust_os::test_panic_handler(info)
 }
 
 #[test_case]
